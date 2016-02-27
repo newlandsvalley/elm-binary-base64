@@ -1,8 +1,8 @@
 import BinaryBase64 exposing (encode, decode)
 import Check exposing (..)
-import Check.Investigator exposing (..)
-import Runner.Browser exposing (display)
-import Result exposing (Result)
+import Check.Producer exposing (..)
+import Check.Test
+import ElmTest
 
 roundTrip : List Int -> List Int
 roundTrip l = 
@@ -27,7 +27,8 @@ suite_base64 =
     [ claim_encode_inverse_of_decode
     ]
 
-result = quickCheck suite_base64
+evidence : Evidence
+evidence = quickCheck suite_base64
 
-main = display result
+main = ElmTest.elementRunner (Check.Test.evidenceToTest evidence)
 
