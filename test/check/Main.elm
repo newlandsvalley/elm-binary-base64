@@ -1,3 +1,6 @@
+module Main exposing (..)
+
+
 import BinaryBase64 exposing (encode, decode)
 import Check exposing (..)
 import Check.Producer exposing (..)
@@ -30,5 +33,6 @@ suite_base64 =
 evidence : Evidence
 evidence = quickCheck suite_base64
 
-main = ElmTest.elementRunner (Check.Test.evidenceToTest evidence)
+main =
+    ElmTest.runSuite (Check.Test.evidenceToTest evidence)
 

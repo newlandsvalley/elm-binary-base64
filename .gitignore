@@ -2,9 +2,7 @@ elm-stuff
 elm.js
 Main.html
 index.html
-/test/check-elm-test/
+/test/temp/
 /test/elm-stuff/
 /test/Main.html
-/test/compile.sh
-/test/compilec.sh
 /deprecated/

@@ -1,9 +1,9 @@
-module BinaryBase64
+module BinaryBase64 exposing
     ( encode
     , decode
     , Octet
     , ByteString
-    ) where
+    ) 
 
 
 {-|  Library for encoding Binary to Base64 and vice-versa,
@@ -153,28 +153,31 @@ isBase64 =
 
 -- top level decoding 
 decodeString : String -> ByteString
-decodeString = log "decode buffer"
-    >> String.toList
-    >> dcd
-    >> int4_char3 
-    >> (List.map toCode) 
+decodeString = 
+    -- log "decode buffer" >>
+    String.toList
+      >> dcd
+      >> int4_char3 
+      >> (List.map toCode) 
 
 
 -- Exported functions.
 
 {-| encode a ByteString as Base64 -}
 encode : ByteString -> String
-encode = log "encode buffer"
-          >> List.map fromCode
-          >> char3_int4
-          >> enc
-          >> String.fromList 
+encode = 
+  -- log "encode buffer" >>
+  List.map fromCode
+    >> char3_int4
+    >> enc
+    >> String.fromList 
 
 {-| decode a Base64 String -}
 decode : String -> Result String ByteString
 decode s =
   if (isBase64 s) then
-    Ok <| log "decoded buffer" (decodeString s)
+    -- Ok <| log "decoded buffer" (decodeString s)
+    Ok (decodeString s)
   else
     Err "invalid Base64 string"
 

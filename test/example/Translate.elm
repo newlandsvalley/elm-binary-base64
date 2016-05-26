@@ -1,18 +1,20 @@
-module Translate where
+module Translate exposing (..)
 
 import Html exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import Html.Attributes exposing (..)
 import Html.Events exposing (on, targetValue)
-import Signal exposing (Address)
-import List exposing (..)
-import Maybe exposing (..)
-import String exposing (..)
+import Html.App as Html
 import Char exposing (isDigit, toCode)
+import String exposing (filter)
 import Result exposing (Result, toMaybe)
 import Maybe.Extra exposing (combine)
 import BinaryBase64 exposing (encode, decode)
 import Bitwise exposing (..)
+
+
+main =
+  Html.beginnerProgram { model = init, view = view, update = update }
 
 -- MODEL
 
@@ -29,7 +31,7 @@ init =
 
 -- UPDATE
 
-type Action
+type Msg
     = NoOp
     | Encode (Maybe (List Int))
     | Encoded String
@@ -37,13 +39,14 @@ type Action
     | Decoded String
 
 encodeMaybe : Maybe (List Int) -> String
-encodeMaybe ml = case ml of
-  Nothing -> ""
-  Just l -> encode l
+encodeMaybe ml = 
+  case ml of
+    Nothing -> ""
+    Just l -> encode l
 
-update : Action -> Model -> Model
-update action model =
-  case action of
+update : Msg -> Model -> Model
+update msg model =
+  case msg of
     NoOp -> model
 
     Encode ml ->  { model | encoded = encodeMaybe ml }
@@ -85,29 +88,29 @@ toStr r = case r of
        |> String.filter digitOrComma
    
 
-view : Signal.Address Action -> Model -> Html
-view address model =
+view : Model -> Html Msg
+view model =
   div []
     [  
      input
         [ placeholder "Ints to encode less (in range 0-255) e.g. 1,44,78,255"
         , value model.decoded
-        , on "input" targetValue (\a -> Signal.message address (Decoded a))
+        , onInput Decoded
         , myStyle
         ]
         [] 
-    ,  button [ onClick address (Encode <| fromStr model.decoded) ] [ text "encode" ]  
+    ,  button [ onClick (Encode <| fromStr model.decoded) ] [ text "encode" ]  
     ,  input
         [ placeholder "text to decode"
         , value model.encoded
-        , on "input" targetValue (\a -> Signal.message address (Encoded a))
+        , onInput Encoded
         , myStyle
         ]
         []    
-    , button [ onClick address (Decode model.encoded) ] [ text "decode" ]  
+    , button [ onClick (Decode model.encoded) ] [ text "decode" ]  
     ]
 
-myStyle : Attribute
+myStyle : Attribute Msg
 myStyle =
   style
     [ ("width", "100%")
