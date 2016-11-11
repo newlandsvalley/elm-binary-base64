@@ -27,9 +27,6 @@ import Result exposing (Result)
 import Debug exposing (..)
 
 
-{- experimental -}
-
-
 infixl 6 |||
 
 
