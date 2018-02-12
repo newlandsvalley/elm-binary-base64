@@ -152,10 +152,10 @@ int4_char3 is =
 
                 -- (a `shiftLeft` 18) `or` (b `shiftLeft` 12) `or` (c `shiftLeft` 6) `or` d
             in
-            fromCode (n >>> 16 &&& 0xFF)
-                :: fromCode (n >>> 8 &&& 0xFF)
-                :: fromCode (n &&& 0xFF)
-                :: int4_char3 t
+                fromCode (n >>> 16 &&& 0xFF)
+                    :: fromCode (n >>> 8 &&& 0xFF)
+                    :: fromCode (n &&& 0xFF)
+                    :: int4_char3 t
 
         {-
            (fromCode (n `shiftRight` 16 `and` 0xFF))
@@ -170,9 +170,9 @@ int4_char3 is =
 
                 -- (a `shiftLeft` 18) `or` (b `shiftLeft` 12)  `or` (c `shiftLeft` 6)
             in
-            [ fromCode (n >>> 16 &&& 0xFF)
-            , fromCode (n >>> 8 &&& 0xFF)
-            ]
+                [ fromCode (n >>> 16 &&& 0xFF)
+                , fromCode (n >>> 8 &&& 0xFF)
+                ]
 
         {-
            [ (fromCode (n `shiftRight` 16 `and` 0xFF))
@@ -186,7 +186,7 @@ int4_char3 is =
 
                 --    (a `shiftLeft` 18) `or` (b `shiftLeft` 12)
             in
-            [ fromCode (n >>> 16 &&& 0xFF) ]
+                [ fromCode (n >>> 16 &&& 0xFF) ]
 
         --    [ (fromCode (n `shiftRight` 16 `and` 0xFF)) ]
         [ _ ] ->
@@ -211,7 +211,7 @@ char3_int4_fold cs acc =
 
                 --    (toCode a `shiftLeft` 16) `or` (toCode b `shiftLeft` 8) `or` (toCode c)
             in
-            char3_int4_fold t (acc ++ [ n >>> 18 &&& 0x3F, n >>> 12 &&& 0x3F, n >>> 6 &&& 0x3F, n &&& 0x3F ])
+                char3_int4_fold t (acc ++ [ n >>> 18 &&& 0x3F, n >>> 12 &&& 0x3F, n >>> 6 &&& 0x3F, n &&& 0x3F ])
 
         --   (n `shiftRight` 18 `and` 0x3F) :: (n `shiftRight` 12 `and` 0x3F) :: (n `shiftRight` 6 `and` 0x3F) :: (n `and` 0x3F) :: char3_int4 t
         [ a, b ] ->
@@ -221,11 +221,11 @@ char3_int4_fold cs acc =
 
                 --   (toCode a `shiftLeft` 16) `or` (toCode b `shiftLeft` 8)
             in
-            acc
-                ++ [ n >>> 18 &&& 0x3F
-                   , n >>> 12 &&& 0x3F
-                   , n >>> 6 &&& 0x3F
-                   ]
+                acc
+                    ++ [ n >>> 18 &&& 0x3F
+                       , n >>> 12 &&& 0x3F
+                       , n >>> 6 &&& 0x3F
+                       ]
 
         {-
            [ (n `shiftRight` 18 `and` 0x3F)
@@ -240,10 +240,10 @@ char3_int4_fold cs acc =
 
                 --   (toCode a `shiftLeft` 16)
             in
-            acc
-                ++ [ n >>> 18 &&& 0x3F
-                   , n >>> 12 &&& 0x3F
-                   ]
+                acc
+                    ++ [ n >>> 18 &&& 0x3F
+                       , n >>> 12 &&& 0x3F
+                       ]
 
         {-
            [ (n `shiftRight` 18 `and` 0x3F)
