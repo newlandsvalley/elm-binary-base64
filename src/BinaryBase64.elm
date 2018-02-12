@@ -1,19 +1,24 @@
 module BinaryBase64
     exposing
-        ( encode
-        , decode
+        ( ByteString
         , Octet
-        , ByteString
+        , decode
+        , encode
         )
 
 {-| Library for encoding Binary to Base64 and vice-versa,
 
+
 # Definition
 
+
 # Data Types
+
 @docs Octet, ByteString
 
+
 # Functions
+
 @docs encode, decode
 
 -}
@@ -21,10 +26,10 @@ module BinaryBase64
 import Array exposing (..)
 import Bitwise exposing (..)
 import Char exposing (fromCode, toCode)
-import Maybe exposing (withDefault)
-import String exposing (toList, fromList)
-import Result exposing (Result)
 import Debug exposing (..)
+import Maybe exposing (withDefault)
+import Result exposing (Result)
+import String exposing (fromList, toList)
 
 
 infixl 6 |||
@@ -147,10 +152,10 @@ int4_char3 is =
 
                 -- (a `shiftLeft` 18) `or` (b `shiftLeft` 12) `or` (c `shiftLeft` 6) `or` d
             in
-                (fromCode (n >>> 16 &&& 0xFF))
-                    :: (fromCode (n >>> 8 &&& 0xFF))
-                    :: (fromCode (n &&& 0xFF))
-                    :: int4_char3 t
+            fromCode (n >>> 16 &&& 0xFF)
+                :: fromCode (n >>> 8 &&& 0xFF)
+                :: fromCode (n &&& 0xFF)
+                :: int4_char3 t
 
         {-
            (fromCode (n `shiftRight` 16 `and` 0xFF))
@@ -165,9 +170,9 @@ int4_char3 is =
 
                 -- (a `shiftLeft` 18) `or` (b `shiftLeft` 12)  `or` (c `shiftLeft` 6)
             in
-                [ (fromCode (n >>> 16 &&& 0xFF))
-                , (fromCode (n >>> 8 &&& 0xFF))
-                ]
+            [ fromCode (n >>> 16 &&& 0xFF)
+            , fromCode (n >>> 8 &&& 0xFF)
+            ]
 
         {-
            [ (fromCode (n `shiftRight` 16 `and` 0xFF))
@@ -181,7 +186,7 @@ int4_char3 is =
 
                 --    (a `shiftLeft` 18) `or` (b `shiftLeft` 12)
             in
-                [ (fromCode (n >>> 16 &&& 0xFF)) ]
+            [ fromCode (n >>> 16 &&& 0xFF) ]
 
         --    [ (fromCode (n `shiftRight` 16 `and` 0xFF)) ]
         [ _ ] ->
@@ -193,15 +198,20 @@ int4_char3 is =
 
 char3_int4 : List Char -> List Int
 char3_int4 cs =
+    char3_int4_fold cs []
+
+
+char3_int4_fold : List Char -> List Int -> List Int
+char3_int4_fold cs acc =
     case cs of
         a :: b :: c :: t ->
             let
                 n =
-                    (toCode a <<< 16) ||| (toCode b <<< 8) ||| (toCode c)
+                    (toCode a <<< 16) ||| (toCode b <<< 8) ||| toCode c
 
                 --    (toCode a `shiftLeft` 16) `or` (toCode b `shiftLeft` 8) `or` (toCode c)
             in
-                (n >>> 18 &&& 0x3F) :: (n >>> 12 &&& 0x3F) :: (n >>> 6 &&& 0x3F) :: (n &&& 0x3F) :: char3_int4 t
+            char3_int4_fold t (acc ++ [ n >>> 18 &&& 0x3F, n >>> 12 &&& 0x3F, n >>> 6 &&& 0x3F, n &&& 0x3F ])
 
         --   (n `shiftRight` 18 `and` 0x3F) :: (n `shiftRight` 12 `and` 0x3F) :: (n `shiftRight` 6 `and` 0x3F) :: (n `and` 0x3F) :: char3_int4 t
         [ a, b ] ->
@@ -211,10 +221,11 @@ char3_int4 cs =
 
                 --   (toCode a `shiftLeft` 16) `or` (toCode b `shiftLeft` 8)
             in
-                [ (n >>> 18 &&& 0x3F)
-                , (n >>> 12 &&& 0x3F)
-                , (n >>> 6 &&& 0x3F)
-                ]
+            acc
+                ++ [ n >>> 18 &&& 0x3F
+                   , n >>> 12 &&& 0x3F
+                   , n >>> 6 &&& 0x3F
+                   ]
 
         {-
            [ (n `shiftRight` 18 `and` 0x3F)
@@ -225,13 +236,14 @@ char3_int4 cs =
         [ a ] ->
             let
                 n =
-                    (toCode a <<< 16)
+                    toCode a <<< 16
 
                 --   (toCode a `shiftLeft` 16)
             in
-                [ (n >>> 18 &&& 0x3F)
-                , (n >>> 12 &&& 0x3F)
-                ]
+            acc
+                ++ [ n >>> 18 &&& 0x3F
+                   , n >>> 12 &&& 0x3F
+                   ]
 
         {-
            [ (n `shiftRight` 18 `and` 0x3F)
@@ -239,7 +251,7 @@ char3_int4 cs =
            ]
         -}
         [] ->
-            []
+            acc
 
 
 
@@ -259,23 +271,28 @@ enc1 i =
 
 quadruplets : List Char -> List Char
 quadruplets cs =
+    quadruplets_fold cs []
+
+
+quadruplets_fold : List Char -> List Char -> List Char
+quadruplets_fold cs acc =
     case cs of
         a :: b :: c :: d :: t ->
-            a :: b :: c :: d :: quadruplets t
+            quadruplets_fold t (acc ++ [ a, b, c, d ])
 
         [ a, b, c ] ->
-            [ a, b, c, '=' ]
+            acc ++ [ a, b, c, '=' ]
 
         -- 16bit tail unit
         [ a, b ] ->
-            [ a, b, '=', '=' ]
+            acc ++ [ a, b, '=', '=' ]
 
         -- 8bit tail unit
         [ _ ] ->
             log "quadruplets: impossible number of characters." []
 
         [] ->
-            []
+            acc
 
 
 
@@ -344,7 +361,7 @@ decodeString =
     String.toList
         >> dcd
         >> int4_char3
-        >> (List.map toCode)
+        >> List.map toCode
 
 
 
@@ -366,7 +383,7 @@ encode =
 -}
 decode : String -> Result String ByteString
 decode s =
-    if (isBase64 s) then
+    if isBase64 s then
         -- Ok <| log "decoded buffer" (decodeString s)
         Ok (decodeString s)
     else
