@@ -27,8 +27,8 @@ import Array exposing (..)
 import Bitwise exposing (..)
 import Char exposing (fromCode, toCode)
 import Debug exposing (..)
+import List.Extra
 import Maybe exposing (withDefault)
-import Result exposing (Result)
 import String exposing (fromList, toList)
 
 
@@ -144,56 +144,60 @@ encodeArray =
 
 int4_char3 : List Int -> List Char
 int4_char3 is =
-    case is of
-        a :: b :: c :: d :: t ->
+    let
+        groupsOfFour values =
             let
-                n =
-                    (a <<< 18) ||| (b <<< 12) ||| (c <<< 6) ||| d
+                grouper elem acc =
+                    case acc of
+                        [] ->
+                            [ [ elem ] ]
 
-                -- (a `shiftLeft` 18) `or` (b `shiftLeft` 12) `or` (c `shiftLeft` 6) `or` d
+                        x :: xs ->
+                            if List.length x == 4 then
+                                [ elem ] :: acc
+                            else
+                                (x ++ [ elem ]) :: xs
             in
-                fromCode (n >>> 16 &&& 0xFF)
-                    :: fromCode (n >>> 8 &&& 0xFF)
-                    :: fromCode (n &&& 0xFF)
-                    :: int4_char3 t
+                List.reverse <| List.foldl grouper [] values
+    in
+        is
+            |> groupsOfFour
+            |> List.map
+                (\subgroup ->
+                    case subgroup of
+                        a :: b :: c :: d :: t ->
+                            let
+                                n =
+                                    (a <<< 18) ||| (b <<< 12) ||| (c <<< 6) ||| d
+                            in
+                                fromCode (n >>> 16 &&& 0xFF)
+                                    :: fromCode (n >>> 8 &&& 0xFF)
+                                    :: fromCode (n &&& 0xFF)
+                                    :: []
 
-        {-
-           (fromCode (n `shiftRight` 16 `and` 0xFF))
-               :: (fromCode (n `shiftRight` 8 `and` 0xFF))
-               :: (fromCode (n `and` 0xFF))
-               :: int4_char3 t
-        -}
-        [ a, b, c ] ->
-            let
-                n =
-                    (a <<< 18) ||| (b <<< 12) ||| (c <<< 6)
+                        [ a, b, c ] ->
+                            let
+                                n =
+                                    (a <<< 18) ||| (b <<< 12) ||| (c <<< 6)
+                            in
+                                [ fromCode (n >>> 16 &&& 0xFF)
+                                , fromCode (n >>> 8 &&& 0xFF)
+                                ]
 
-                -- (a `shiftLeft` 18) `or` (b `shiftLeft` 12)  `or` (c `shiftLeft` 6)
-            in
-                [ fromCode (n >>> 16 &&& 0xFF)
-                , fromCode (n >>> 8 &&& 0xFF)
-                ]
+                        [ a, b ] ->
+                            let
+                                n =
+                                    (a <<< 18) ||| (b <<< 12)
+                            in
+                                [ fromCode (n >>> 16 &&& 0xFF) ]
 
-        {-
-           [ (fromCode (n `shiftRight` 16 `and` 0xFF))
-           , (fromCode (n `shiftRight` 8 `and` 0xFF))
-           ]
-        -}
-        [ a, b ] ->
-            let
-                n =
-                    (a <<< 18) ||| (b <<< 12)
+                        [ _ ] ->
+                            log "int4_char3: impossible number of Ints." []
 
-                --    (a `shiftLeft` 18) `or` (b `shiftLeft` 12)
-            in
-                [ fromCode (n >>> 16 &&& 0xFF) ]
-
-        --    [ (fromCode (n `shiftRight` 16 `and` 0xFF)) ]
-        [ _ ] ->
-            log "int4_char3: impossible number of Ints." []
-
-        [] ->
-            []
+                        [] ->
+                            []
+                )
+            |> List.concat
 
 
 char3_int4 : List Char -> List Int
@@ -312,33 +316,24 @@ enc =
 
 dcd : List Char -> List Int
 dcd cs =
-    case cs of
-        [] ->
-            []
-
-        h :: t ->
-            case h of
-                '=' ->
-                    []
-
-                -- terminate data stream
-                _ ->
-                    if h <= 'Z' && h >= 'A' then
-                        toCode h - toCode 'A' :: dcd t
-                    else if h >= '0' && h <= '9' then
-                        toCode h - toCode '0' + 52 :: dcd t
-                    else if h >= 'a' && h <= 'z' then
-                        toCode h - toCode 'a' + 26 :: dcd t
-                    else if h == '+' then
-                        62 :: dcd t
-                    else if h == '/' then
-                        63 :: dcd t
-                    else
-                        dcd t
-
-
-
--- validation
+    cs
+        |> List.Extra.takeWhile (\a -> a /= '=')
+        |> List.map
+            (\h ->
+                if h <= 'Z' && h >= 'A' then
+                    toCode h - toCode 'A'
+                else if h >= '0' && h <= '9' then
+                    toCode h - toCode '0' + 52
+                else if h >= 'a' && h <= 'z' then
+                    toCode h - toCode 'a' + 26
+                else if h == '+' then
+                    62
+                else if h == '/' then
+                    63
+                else
+                    -- This case can't happen since we only call this function if isBase64 is true.
+                    0
+            )
 
 
 isBase64Char : Char -> Bool

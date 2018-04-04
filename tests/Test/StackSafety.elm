@@ -3,7 +3,7 @@ module Test.StackSafety exposing (..)
 import Test exposing (..)
 import Expect exposing (..)
 import String
-import BinaryBase64 exposing (encode)
+import BinaryBase64 exposing (encode, decode)
 
 
 -- just ensure that the tests actually run
@@ -21,4 +21,16 @@ tests =
                         List.repeat 50000 0x00
                 in
                     Expect.greaterThan 0 (String.length (encode bigInput))
+        , test "decode big input" <|
+            \_ ->
+                let
+                    bigInput =
+                        String.repeat 50000 "0"
+                in
+                    case decode bigInput of
+                        Ok a ->
+                            Expect.greaterThan 0 (List.length a)
+
+                        Err a ->
+                            Expect.fail "Decoding shouldn't fail."
         ]
