@@ -1,4 +1,5 @@
 sudo: false
+language: bash
 
 cache:
   directories:
@@ -9,38 +10,46 @@ cache:
     # Install and cache sysconfcpus
     - sysconfcpus
 
-env:
-  matrix:
-    - ELM_VERSION=0.18.0 TARGET_NODE_VERSION=node
+# env:
+#   matrix:
+#     - ELM_VERSION=0.19.0 TARGET_NODE_VERSION=node
+
+matrix:
+    include:
+        - os: linux
+          env: ELM_VERSION=0.19.0 TARGET_NODE_VERSION=node ELM_BINARY=https://44a95588fe4cc47efd96-ec3c2a753a12d2be9f23ba16873acc23.ssl.cf2.rackcdn.com/linux-64.tar.gz
+        - os: osx
+          env: ELM_VERSION=0.19.0 TARGET_NODE_VERSION=node ELM_BINARY=https://44a95588fe4cc47efd96-ec3c2a753a12d2be9f23ba16873acc23.ssl.cf2.rackcdn.com/mac-64.tar.gz
+
+
 
 before_install:
-  - | # epic build time improvement - see https://github.com/elm-lang/elm-compiler/issues/1473#issuecomment-245704142
-    if [ ! -d sysconfcpus/bin ];
-    then
-      git clone https://github.com/obmarg/libsysconfcpus.git;
-      cd libsysconfcpus;
-      git checkout 8cb9da66020fa4058e550bfae1182a12ac1e4eab;
-      ./configure --prefix=$TRAVIS_BUILD_DIR/sysconfcpus;
-      make && make install;
-      cd ..;
-    fi
+  # - echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+  # - | # epic build time improvement - see https://github.com/elm-lang/elm-compiler/issues/1473#issuecomment-245704142
+  #   if [ ! -d sysconfcpus/bin ];
+  #   then
+  #     git clone https://github.com/obmarg/libsysconfcpus.git;
+  #     cd libsysconfcpus;
+  #     ./configure --prefix=$TRAVIS_BUILD_DIR/sysconfcpus;
+  #     make && make install;
+  #     cd ..;
+  #   fi
+  - curl $ELM_BINARY | tar xz
+  # - mv ./elm $(npm config get prefix)/bin/elm
+  # - mv $(npm config get prefix)/bin/elm $(npm config get prefix)/bin/elm-old
+  # - printf "#\041/bin/bash\n\necho \"Running elm with sysconfcpus -n 2\"\n\n$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-old \"\$@\"" > $(npm config get prefix)/bin/elm
+  # - chmod +x $(npm config get prefix)/bin/elm
+
 install:
   - nvm install $TARGET_NODE_VERSION
   - nvm use $TARGET_NODE_VERSION
   - node --version
   - npm --version
-  - npm install -g elm@$ELM_VERSION
-  - npm install -g elm-format
-  - npm install -g elm-test
-  - mv $(npm config get prefix)/bin/elm-make $(npm config get prefix)/bin/elm-make-old
-  - printf "#\041/bin/bash\n\necho \"Running elm-make with sysconfcpus -n 2\"\n\n$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-make-old \"\$@\"" > $(npm config get prefix)/bin/elm-make
-  - chmod +x $(npm config get prefix)/bin/elm-make
-  - npm install
-  - cd example
-  - elm package install --yes
-  - cd ..
+  - ./elm --version
+  # - npm install -g elm@$ELM_VERSION
+  - npm install -g elm-test@beta
 
 script:
-  - yes | make all
-  - elm-format --validate src/
-  - elm-test
+  # - elm-format --validate src/
+  # - elm-analyse
+  - elm-test --compiler ./elm

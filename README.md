@@ -16,15 +16,8 @@ and the following functions:
 
     encode : ByteString -> String
 
-    decode : String -> Result String ByteString    
+    decode : String -> Result String ByteString
 
-
-To build example
-----------------
-
-cd to example and run:
-
-    ./compile.sh
 
 To test
 -------
@@ -36,6 +29,6 @@ simply run:
 Limitations
 -----------
 
-I was originally intending not to publish this package but was persuaded to do so because a couple of people have found use for it.  If you only need to encode, then it is probably useful as it stands.  If you need to decode, then you will probably have to drop down to JavaScript in order to convert the result into some kind of byte array.  
+I was originally intending not to publish this package but was persuaded to do so because a couple of people have found use for it.  If you only need to encode, then it is probably useful as it stands.  If you need to decode, then you will probably have to drop down to JavaScript in order to convert the result into some kind of byte array.
 
 There's not a lot of point in decoding Base64 and then just providing a List of Ints - we really need a Byte array buffer of some sort which we can then (say) pass to javascript APIs that require them.  However, it will be very simple to upgrade this library if and when such facilities are available.  See [this issue](https://groups.google.com/forum/#!topic/elm-discuss/spr621OlUeo).

@@ -26,22 +26,8 @@ module BinaryBase64
 import Array exposing (..)
 import Bitwise exposing (..)
 import Char exposing (fromCode, toCode)
-import Debug exposing (..)
-import List.Extra
 import Maybe exposing (withDefault)
 import String exposing (fromList, toList)
-
-
-infixl 6 |||
-
-
-infixl 6 &&&
-
-
-infixl 7 <<<
-
-
-infixl 7 >>>
 
 
 {-| an 8-bit word masquerading as an Int - we don't have an elm Byte type yet
@@ -54,22 +40,6 @@ type alias Octet =
 -}
 type alias ByteString =
     List Octet
-
-
-(<<<) =
-    flip Bitwise.shiftLeftBy
-
-
-(>>>) =
-    flip Bitwise.shiftRightBy
-
-
-(&&&) =
-    Bitwise.and
-
-
-(|||) =
-    Bitwise.or
 
 
 encodeArray : Array Char
@@ -168,31 +138,68 @@ int4_char3 is =
                         a :: b :: c :: d :: t ->
                             let
                                 n =
-                                    (a <<< 18) ||| (b <<< 12) ||| (c <<< 6) ||| d
+                                    Bitwise.shiftLeftBy 18 a
+                                        |> Bitwise.or (Bitwise.shiftLeftBy 12 b)
+                                        |> Bitwise.or (Bitwise.shiftLeftBy 6 c)
+                                        |> Bitwise.or d
+
+                                -- n =
+                                --     (a <<< 18) ||| (b <<< 12) ||| (c <<< 6) ||| d
+                                char1 =
+                                    Bitwise.shiftRightBy 16 n
+                                        |> Bitwise.and 0xFF
+
+                                char2 =
+                                    Bitwise.shiftRightBy 8 n
+                                        |> Bitwise.and 0xFF
+
+                                char3 =
+                                    Bitwise.and 0xFF n
                             in
-                                fromCode (n >>> 16 &&& 0xFF)
-                                    :: fromCode (n >>> 8 &&& 0xFF)
-                                    :: fromCode (n &&& 0xFF)
+                                fromCode char1
+                                    :: fromCode char2
+                                    :: fromCode char3
                                     :: []
 
                         [ a, b, c ] ->
                             let
                                 n =
-                                    (a <<< 18) ||| (b <<< 12) ||| (c <<< 6)
+                                    Bitwise.shiftLeftBy 18 a
+                                        |> Bitwise.or (Bitwise.shiftLeftBy 12 b)
+                                        |> Bitwise.or (Bitwise.shiftLeftBy 6 c)
+
+                                char1 =
+                                    Bitwise.shiftRightBy 16 n
+                                        |> Bitwise.and 0xFF
+
+                                char2 =
+                                    Bitwise.shiftRightBy 8 n
+                                        |> Bitwise.and 0xFF
+
+                                -- n =
+                                --     (a <<< 18) ||| (b <<< 12) ||| (c <<< 6)
                             in
-                                [ fromCode (n >>> 16 &&& 0xFF)
-                                , fromCode (n >>> 8 &&& 0xFF)
+                                [ fromCode (char1)
+                                , fromCode (char2)
                                 ]
 
                         [ a, b ] ->
                             let
+                                -- n =
+                                --     (a <<< 18) ||| (b <<< 12)
                                 n =
-                                    (a <<< 18) ||| (b <<< 12)
+                                    Bitwise.shiftLeftBy 18 a
+                                        |> Bitwise.or (Bitwise.shiftLeftBy 12 b)
+
+                                char1 =
+                                    Bitwise.shiftRightBy 16 n
+                                        |> Bitwise.and 0xFF
                             in
-                                [ fromCode (n >>> 16 &&& 0xFF) ]
+                                [ fromCode char1 ]
 
                         [ _ ] ->
-                            log "int4_char3: impossible number of Ints." []
+                            -- log "int4_char3: impossible number of Ints."
+                            []
 
                         [] ->
                             []
@@ -210,25 +217,62 @@ char3_int4_fold cs acc =
     case cs of
         a :: b :: c :: t ->
             let
+                -- n =
+                --     (toCode a <<< 16) ||| (toCode b <<< 8) ||| toCode c
                 n =
-                    (toCode a <<< 16) ||| (toCode b <<< 8) ||| toCode c
+                    Bitwise.shiftLeftBy 16 (toCode a)
+                        |> Bitwise.or (Bitwise.shiftLeftBy 8 (toCode b))
+                        |> Bitwise.or (toCode c)
+
+                char1 =
+                    Bitwise.shiftRightBy 18 n
+                        |> Bitwise.and 0x3F
+
+                char2 =
+                    Bitwise.shiftRightBy 12 n
+                        |> Bitwise.and 0x3F
+
+                char3 =
+                    Bitwise.shiftRightBy 6 n
+                        |> Bitwise.and 0x3F
+
+                char4 =
+                    Bitwise.and 0x3F n
+
+                newAcc =
+                    (acc ++ [ char1, char2, char3, char4 ])
 
                 --    (toCode a `shiftLeft` 16) `or` (toCode b `shiftLeft` 8) `or` (toCode c)
             in
-                char3_int4_fold t (acc ++ [ n >>> 18 &&& 0x3F, n >>> 12 &&& 0x3F, n >>> 6 &&& 0x3F, n &&& 0x3F ])
+                char3_int4_fold t newAcc
 
         --   (n `shiftRight` 18 `and` 0x3F) :: (n `shiftRight` 12 `and` 0x3F) :: (n `shiftRight` 6 `and` 0x3F) :: (n `and` 0x3F) :: char3_int4 t
         [ a, b ] ->
             let
+                -- n =
+                --     (toCode a <<< 16) ||| (toCode b <<< 8)
                 n =
-                    (toCode a <<< 16) ||| (toCode b <<< 8)
+                    Bitwise.shiftLeftBy 16 (toCode a)
+                        |> Bitwise.or (Bitwise.shiftLeftBy 8 (toCode b))
 
+                -- |> Bitwise.or (toCode c)
                 --   (toCode a `shiftLeft` 16) `or` (toCode b `shiftLeft` 8)
+                char1 =
+                    Bitwise.shiftRightBy 18 n
+                        |> Bitwise.and 0x3F
+
+                char2 =
+                    Bitwise.shiftRightBy 12 n
+                        |> Bitwise.and 0x3F
+
+                char3 =
+                    Bitwise.shiftRightBy 6 n
+                        |> Bitwise.and 0x3F
             in
                 acc
-                    ++ [ n >>> 18 &&& 0x3F
-                       , n >>> 12 &&& 0x3F
-                       , n >>> 6 &&& 0x3F
+                    ++ [ char1
+                       , char2
+                       , char3
                        ]
 
         {-
@@ -239,14 +283,24 @@ char3_int4_fold cs acc =
         -}
         [ a ] ->
             let
+                -- n =
+                --     toCode a <<< 16
                 n =
-                    toCode a <<< 16
+                    Bitwise.shiftLeftBy 16 (toCode a)
+
+                char1 =
+                    Bitwise.shiftRightBy 18 n
+                        |> Bitwise.and 0x3F
+
+                char2 =
+                    Bitwise.shiftRightBy 12 n
+                        |> Bitwise.and 0x3F
 
                 --   (toCode a `shiftLeft` 16)
             in
                 acc
-                    ++ [ n >>> 18 &&& 0x3F
-                       , n >>> 12 &&& 0x3F
+                    ++ [ char1
+                       , char2
                        ]
 
         {-
@@ -293,7 +347,8 @@ quadruplets_fold cs acc =
 
         -- 8bit tail unit
         [ _ ] ->
-            log "quadruplets: impossible number of characters." []
+            -- log "quadruplets: impossible number of characters."
+            []
 
         [] ->
             acc
@@ -312,12 +367,43 @@ enc =
 
 
 -- decode worker
+-- takeWhile : (a -> Bool) -> List a -> List a
+-- takeWhile predicate =
+--     let
+--         takeWhileMemo memo list =
+--             case list of
+--                 [] ->
+--                     List.reverse memo
+--                 x :: xs ->
+--                     if predicate x then
+--                         takeWhileMemo (x :: memo) xs
+--                     else
+--                         List.reverse memo
+--     in
+--         takeWhileMemo []
+
+
+takeWhile : (a -> Bool) -> List a -> List a
+takeWhile predicate =
+    takeWhileMemo predicate []
+
+
+takeWhileMemo predicate memo list =
+    case list of
+        [] ->
+            List.reverse memo
+
+        x :: xs ->
+            if predicate x then
+                takeWhileMemo predicate (x :: memo) xs
+            else
+                List.reverse memo
 
 
 dcd : List Char -> List Int
 dcd cs =
     cs
-        |> List.Extra.takeWhile (\a -> a /= '=')
+        |> takeWhile ((/=) '=')
         |> List.map
             (\h ->
                 if h <= 'Z' && h >= 'A' then

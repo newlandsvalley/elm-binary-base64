@@ -1,8 +1,7 @@
 elm-stuff
 elm.js
-Main.html
-index.html
-/test/temp/
-/test/elm-stuff/
-/test/Main.html
-/deprecated/
+elm
+.DS_Store
+.vscode/
+node_modules/
+package.json
