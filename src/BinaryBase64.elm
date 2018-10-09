@@ -32,18 +32,6 @@ import Maybe exposing (withDefault)
 import String exposing (fromList, toList)
 
 
-infixl 6 |||
-
-
-infixl 6 &&&
-
-
-infixl 7 <<<
-
-
-infixl 7 >>>
-
-
 {-| an 8-bit word masquerading as an Int - we don't have an elm Byte type yet
 -}
 type alias Octet =
@@ -55,7 +43,7 @@ type alias Octet =
 type alias ByteString =
     List Octet
 
-
+{-
 (<<<) =
     flip Bitwise.shiftLeftBy
 
@@ -70,7 +58,7 @@ type alias ByteString =
 
 (|||) =
     Bitwise.or
-
+-}
 
 encodeArray : Array Char
 encodeArray =
@@ -167,29 +155,34 @@ int4_char3 is =
                     case subgroup of
                         a :: b :: c :: d :: t ->
                             let
-                                n =
-                                    (a <<< 18) ||| (b <<< 12) ||| (c <<< 6) ||| d
+                                n = Bitwise.or
+                                    (Bitwise.or (Bitwise.shiftLeftBy 18 a) (Bitwise.shiftLeftBy 12 b))
+                                    (Bitwise.or (Bitwise.shiftLeftBy 6 c) d)
                             in
-                                fromCode (n >>> 16 &&& 0xFF)
-                                    :: fromCode (n >>> 8 &&& 0xFF)
-                                    :: fromCode (n &&& 0xFF)
+                                fromCode (Bitwise.and (Bitwise.shiftRightBy 16 n) 0xFF)
+                                    :: fromCode (Bitwise.and (Bitwise.shiftRightBy 8 n) 0xFF)
+                                    :: fromCode (Bitwise.and n 0xFF)
                                     :: []
 
                         [ a, b, c ] ->
                             let
-                                n =
-                                    (a <<< 18) ||| (b <<< 12) ||| (c <<< 6)
+                                n = Bitwise.or
+                                    (Bitwise.or 
+                                        (Bitwise.shiftLeftBy 18 a)
+                                        (Bitwise.shiftLeftBy 12 b)
+                                    ) (Bitwise.shiftLeftBy 6 c)
                             in
-                                [ fromCode (n >>> 16 &&& 0xFF)
-                                , fromCode (n >>> 8 &&& 0xFF)
+                                [ fromCode (Bitwise.and (Bitwise.shiftRightBy 16 n) 0xFF)
+                                , fromCode (Bitwise.and (Bitwise.shiftRightBy 8 n) 0xFF)
                                 ]
 
                         [ a, b ] ->
                             let
-                                n =
-                                    (a <<< 18) ||| (b <<< 12)
+                                n = Bitwise.or
+                                    (Bitwise.shiftLeftBy 18 a)
+                                    (Bitwise.shiftLeftBy 12 b)
                             in
-                                [ fromCode (n >>> 16 &&& 0xFF) ]
+                                [ fromCode (Bitwise.and (Bitwise.shiftRightBy 16 n) 0xFF) ]
 
                         [ _ ] ->
                             log "int4_char3: impossible number of Ints." []
@@ -210,25 +203,34 @@ char3_int4_fold cs acc =
     case cs of
         a :: b :: c :: t ->
             let
-                n =
-                    (toCode a <<< 16) ||| (toCode b <<< 8) ||| toCode c
+                n = Bitwise.or (toCode c) <| Bitwise.or
+                    (Bitwise.shiftLeftBy 16 <| toCode a)
+                    (Bitwise.shiftLeftBy 8 <| toCode b)
 
                 --    (toCode a `shiftLeft` 16) `or` (toCode b `shiftLeft` 8) `or` (toCode c)
             in
-                char3_int4_fold t (acc ++ [ n >>> 18 &&& 0x3F, n >>> 12 &&& 0x3F, n >>> 6 &&& 0x3F, n &&& 0x3F ])
+                char3_int4_fold t 
+                    (acc ++ 
+                        [ Bitwise.and (Bitwise.shiftRightBy 18 n) 0x3F
+                        , Bitwise.and (Bitwise.shiftRightBy 12 n) 0x3F
+                        , Bitwise.and (Bitwise.shiftRightBy 6 n) 0x3F
+                        , Bitwise.and n 0x3F 
+                        ]
+                    )
 
         --   (n `shiftRight` 18 `and` 0x3F) :: (n `shiftRight` 12 `and` 0x3F) :: (n `shiftRight` 6 `and` 0x3F) :: (n `and` 0x3F) :: char3_int4 t
         [ a, b ] ->
             let
-                n =
-                    (toCode a <<< 16) ||| (toCode b <<< 8)
+                n = Bitwise.or
+                    (Bitwise.shiftLeftBy 16 <| toCode a) 
+                    (Bitwise.shiftLeftBy 8 <| toCode b)
 
                 --   (toCode a `shiftLeft` 16) `or` (toCode b `shiftLeft` 8)
             in
                 acc
-                    ++ [ n >>> 18 &&& 0x3F
-                       , n >>> 12 &&& 0x3F
-                       , n >>> 6 &&& 0x3F
+                    ++ [ Bitwise.and (shiftRightBy 18 n) 0x3F
+                       , Bitwise.and (shiftRightBy 12 n) 0x3F
+                       , Bitwise.and (shiftRightBy 6 n) 0x3F
                        ]
 
         {-
@@ -240,13 +242,13 @@ char3_int4_fold cs acc =
         [ a ] ->
             let
                 n =
-                    toCode a <<< 16
+                    shiftLeftBy 16 (toCode a)
 
                 --   (toCode a `shiftLeft` 16)
             in
                 acc
-                    ++ [ n >>> 18 &&& 0x3F
-                       , n >>> 12 &&& 0x3F
+                    ++ [ Bitwise.and (shiftRightBy 18 n) 0x3F
+                       , Bitwise.and (shiftRightBy 12 n) 0x3F
                        ]
 
         {-

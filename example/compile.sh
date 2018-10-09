@@ -1,2 +1,2 @@
-elm-make Translate.elm --output Main.html
+elm make Translate.elm --output Main.html
 
