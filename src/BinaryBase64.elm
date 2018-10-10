@@ -1,10 +1,7 @@
-module BinaryBase64
-    exposing
-        ( ByteString
-        , Octet
-        , decode
-        , encode
-        )
+module BinaryBase64 exposing
+    ( Octet, ByteString
+    , encode, decode
+    )
 
 {-| Library for encoding Binary to Base64 and vice-versa,
 
@@ -32,18 +29,6 @@ import Maybe exposing (withDefault)
 import String exposing (fromList, toList)
 
 
-infixl 6 |||
-
-
-infixl 6 &&&
-
-
-infixl 7 <<<
-
-
-infixl 7 >>>
-
-
 {-| an 8-bit word masquerading as an Int - we don't have an elm Byte type yet
 -}
 type alias Octet =
@@ -54,22 +39,6 @@ type alias Octet =
 -}
 type alias ByteString =
     List Octet
-
-
-(<<<) =
-    flip Bitwise.shiftLeftBy
-
-
-(>>>) =
-    flip Bitwise.shiftRightBy
-
-
-(&&&) =
-    Bitwise.and
-
-
-(|||) =
-    Bitwise.or
 
 
 encodeArray : Array Char
@@ -155,49 +124,59 @@ int4_char3 is =
                         x :: xs ->
                             if List.length x == 4 then
                                 [ elem ] :: acc
+
                             else
                                 (x ++ [ elem ]) :: xs
             in
-                List.reverse <| List.foldl grouper [] values
+            List.reverse <| List.foldl grouper [] values
     in
-        is
-            |> groupsOfFour
-            |> List.map
-                (\subgroup ->
-                    case subgroup of
-                        a :: b :: c :: d :: t ->
-                            let
-                                n =
-                                    (a <<< 18) ||| (b <<< 12) ||| (c <<< 6) ||| d
-                            in
-                                fromCode (n >>> 16 &&& 0xFF)
-                                    :: fromCode (n >>> 8 &&& 0xFF)
-                                    :: fromCode (n &&& 0xFF)
-                                    :: []
+    is
+        |> groupsOfFour
+        |> List.map
+            (\subgroup ->
+                case subgroup of
+                    a :: b :: c :: d :: t ->
+                        let
+                            n =
+                                Bitwise.or
+                                    (Bitwise.or (Bitwise.shiftLeftBy 18 a) (Bitwise.shiftLeftBy 12 b))
+                                    (Bitwise.or (Bitwise.shiftLeftBy 6 c) d)
+                        in
+                        fromCode (Bitwise.and (Bitwise.shiftRightBy 16 n) 0xFF)
+                            :: fromCode (Bitwise.and (Bitwise.shiftRightBy 8 n) 0xFF)
+                            :: fromCode (Bitwise.and n 0xFF)
+                            :: []
 
-                        [ a, b, c ] ->
-                            let
-                                n =
-                                    (a <<< 18) ||| (b <<< 12) ||| (c <<< 6)
-                            in
-                                [ fromCode (n >>> 16 &&& 0xFF)
-                                , fromCode (n >>> 8 &&& 0xFF)
-                                ]
+                    [ a, b, c ] ->
+                        let
+                            n =
+                                Bitwise.or
+                                    (Bitwise.or
+                                        (Bitwise.shiftLeftBy 18 a)
+                                        (Bitwise.shiftLeftBy 12 b)
+                                    )
+                                    (Bitwise.shiftLeftBy 6 c)
+                        in
+                        [ fromCode (Bitwise.and (Bitwise.shiftRightBy 16 n) 0xFF)
+                        , fromCode (Bitwise.and (Bitwise.shiftRightBy 8 n) 0xFF)
+                        ]
 
-                        [ a, b ] ->
-                            let
-                                n =
-                                    (a <<< 18) ||| (b <<< 12)
-                            in
-                                [ fromCode (n >>> 16 &&& 0xFF) ]
+                    [ a, b ] ->
+                        let
+                            n =
+                                Bitwise.or
+                                    (Bitwise.shiftLeftBy 18 a)
+                                    (Bitwise.shiftLeftBy 12 b)
+                        in
+                        [ fromCode (Bitwise.and (Bitwise.shiftRightBy 16 n) 0xFF) ]
 
-                        [ _ ] ->
-                            log "int4_char3: impossible number of Ints." []
+                    [ _ ] ->
+                        log "int4_char3: impossible number of Ints." []
 
-                        [] ->
-                            []
-                )
-            |> List.concat
+                    [] ->
+                        []
+            )
+        |> List.concat
 
 
 char3_int4 : List Char -> List Int
@@ -211,25 +190,37 @@ char3_int4_fold cs acc =
         a :: b :: c :: t ->
             let
                 n =
-                    (toCode a <<< 16) ||| (toCode b <<< 8) ||| toCode c
+                    Bitwise.or (toCode c) <|
+                        Bitwise.or
+                            (Bitwise.shiftLeftBy 16 <| toCode a)
+                            (Bitwise.shiftLeftBy 8 <| toCode b)
 
                 --    (toCode a `shiftLeft` 16) `or` (toCode b `shiftLeft` 8) `or` (toCode c)
             in
-                char3_int4_fold t (acc ++ [ n >>> 18 &&& 0x3F, n >>> 12 &&& 0x3F, n >>> 6 &&& 0x3F, n &&& 0x3F ])
+            char3_int4_fold t
+                (acc
+                    ++ [ Bitwise.and (Bitwise.shiftRightBy 18 n) 0x3F
+                       , Bitwise.and (Bitwise.shiftRightBy 12 n) 0x3F
+                       , Bitwise.and (Bitwise.shiftRightBy 6 n) 0x3F
+                       , Bitwise.and n 0x3F
+                       ]
+                )
 
         --   (n `shiftRight` 18 `and` 0x3F) :: (n `shiftRight` 12 `and` 0x3F) :: (n `shiftRight` 6 `and` 0x3F) :: (n `and` 0x3F) :: char3_int4 t
         [ a, b ] ->
             let
                 n =
-                    (toCode a <<< 16) ||| (toCode b <<< 8)
+                    Bitwise.or
+                        (Bitwise.shiftLeftBy 16 <| toCode a)
+                        (Bitwise.shiftLeftBy 8 <| toCode b)
 
                 --   (toCode a `shiftLeft` 16) `or` (toCode b `shiftLeft` 8)
             in
-                acc
-                    ++ [ n >>> 18 &&& 0x3F
-                       , n >>> 12 &&& 0x3F
-                       , n >>> 6 &&& 0x3F
-                       ]
+            acc
+                ++ [ Bitwise.and (shiftRightBy 18 n) 0x3F
+                   , Bitwise.and (shiftRightBy 12 n) 0x3F
+                   , Bitwise.and (shiftRightBy 6 n) 0x3F
+                   ]
 
         {-
            [ (n `shiftRight` 18 `and` 0x3F)
@@ -240,14 +231,14 @@ char3_int4_fold cs acc =
         [ a ] ->
             let
                 n =
-                    toCode a <<< 16
+                    shiftLeftBy 16 (toCode a)
 
                 --   (toCode a `shiftLeft` 16)
             in
-                acc
-                    ++ [ n >>> 18 &&& 0x3F
-                       , n >>> 12 &&& 0x3F
-                       ]
+            acc
+                ++ [ Bitwise.and (shiftRightBy 18 n) 0x3F
+                   , Bitwise.and (shiftRightBy 12 n) 0x3F
+                   ]
 
         {-
            [ (n `shiftRight` 18 `and` 0x3F)
@@ -322,14 +313,19 @@ dcd cs =
             (\h ->
                 if h <= 'Z' && h >= 'A' then
                     toCode h - toCode 'A'
+
                 else if h >= '0' && h <= '9' then
                     toCode h - toCode '0' + 52
+
                 else if h >= 'a' && h <= 'z' then
                     toCode h - toCode 'a' + 26
+
                 else if h == '+' then
                     62
+
                 else if h == '/' then
                     63
+
                 else
                     -- This case can't happen since we only call this function if isBase64 is true.
                     0
@@ -381,5 +377,6 @@ decode s =
     if isBase64 s then
         -- Ok <| log "decoded buffer" (decodeString s)
         Ok (decodeString s)
+
     else
         Err "invalid Base64 string"
