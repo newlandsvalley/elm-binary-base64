@@ -13,8 +13,9 @@ import BinaryBase64 exposing (encode, decode)
 import Bitwise exposing (..)
 
 
-main = Browser.sandbox
-     { init = init, view = view, update = update }
+main =
+    Browser.sandbox
+        { init = init, view = view, update = update }
 
 
 
@@ -120,19 +121,31 @@ toStr r =
                 |> listIntToString
                 |> String.filter digitOrComma
 
+
 listIntToString : List Int -> String
 listIntToString l =
     case l of
-        [] -> "[]"
-        [i] -> "["++String.fromInt i++"]"
-        ls -> "["++listIntToStringHelp ls++"]"
+        [] ->
+            "[]"
+
+        [ i ] ->
+            "[" ++ String.fromInt i ++ "]"
+
+        ls ->
+            "[" ++ listIntToStringHelp ls ++ "]"
+
 
 listIntToStringHelp : List Int -> String
 listIntToStringHelp l =
     case l of
-        [] -> "Damnit, how???"
-        i::[] -> String.fromInt i
-        i::is -> (String.fromInt i ++ ", ")++(listIntToStringHelp is)
+        [] ->
+            "Damnit, how???"
+
+        i :: [] ->
+            String.fromInt i
+
+        i :: is ->
+            (String.fromInt i ++ ", ") ++ (listIntToStringHelp is)
 
 
 view : Model -> Html Msg
@@ -140,16 +153,20 @@ view model =
     div []
         [ input
             ([ placeholder "Ints to encode less (in range 0-255) e.g. 1,44,78,255"
-            , value model.decoded
-            , onInput Decoded
-            ]++myStyle)
+             , value model.decoded
+             , onInput Decoded
+             ]
+                ++ myStyle
+            )
             []
         , button [ onClick (Encode <| fromStr model.decoded) ] [ text "encode" ]
         , input
             ([ placeholder "text to decode"
-            , value model.encoded
-            , onInput Encoded
-            ]++myStyle)
+             , value model.encoded
+             , onInput Encoded
+             ]
+                ++ myStyle
+            )
             []
         , button [ onClick (Decode model.encoded) ] [ text "decode" ]
         ]
@@ -157,7 +174,7 @@ view model =
 
 myStyle : List (Attribute Msg)
 myStyle =
-    List.map (\(p,v) -> style p v)
+    List.map (\( p, v ) -> style p v)
         [ ( "width", "100%" )
         , ( "height", "40px" )
         , ( "padding", "10px 0" )
