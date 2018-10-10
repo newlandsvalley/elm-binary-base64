@@ -11,36 +11,21 @@ cache:
 
 env:
   matrix:
-    - ELM_VERSION=0.18.0 TARGET_NODE_VERSION=node
+    - ELM_VERSION=0.19.0 TARGET_NODE_VERSION=node
 
-before_install:
-  - | # epic build time improvement - see https://github.com/elm-lang/elm-compiler/issues/1473#issuecomment-245704142
-    if [ ! -d sysconfcpus/bin ];
-    then
-      git clone https://github.com/obmarg/libsysconfcpus.git;
-      cd libsysconfcpus;
-      git checkout 8cb9da66020fa4058e550bfae1182a12ac1e4eab;
-      ./configure --prefix=$TRAVIS_BUILD_DIR/sysconfcpus;
-      make && make install;
-      cd ..;
-    fi
 install:
   - nvm install $TARGET_NODE_VERSION
   - nvm use $TARGET_NODE_VERSION
   - node --version
   - npm --version
-  - npm install -g elm@$ELM_VERSION
-  - npm install -g elm-format
-  - npm install -g elm-test
-  - mv $(npm config get prefix)/bin/elm-make $(npm config get prefix)/bin/elm-make-old
-  - printf "#\041/bin/bash\n\necho \"Running elm-make with sysconfcpus -n 2\"\n\n$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-make-old \"\$@\"" > $(npm config get prefix)/bin/elm-make
-  - chmod +x $(npm config get prefix)/bin/elm-make
-  - npm install
+  - npm install -g elm@elm$ELM_VERSION
+  - npm install -g elm-format@elm$ELM_VERSION
+  - npm install -g elm-test@elm$ELM_VERSION
   - cd example
-  - elm package install --yes
+  - elm make Translate.elm --output Main.html
   - cd ..
 
 script:
-  - yes | make all
+  - elm make src/BinaryBase64.elm
   - elm-format --validate src/
   - elm-test

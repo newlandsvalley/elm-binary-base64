@@ -1,5 +1,6 @@
 module Translate exposing (..)
 
+import Browser
 import Html exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Html.Attributes exposing (..)
@@ -13,7 +14,8 @@ import Bitwise exposing (..)
 
 
 main =
-    Html.beginnerProgram { model = init, view = view, update = update }
+    Browser.sandbox
+        { init = init, view = view, update = update }
 
 
 
@@ -93,14 +95,14 @@ toByte s =
             String.toInt s
     in
         case r of
-            Ok i ->
+            Just i ->
                 if (i >= 0 && i <= 255) then
-                    r
+                    Result.Ok i
                 else
                     Err "Out of range"
 
-            _ ->
-                r
+            Nothing ->
+                Result.Err "Unspecified integer parsing error"
 
 
 digitOrComma : Char -> Bool
@@ -116,35 +118,63 @@ toStr r =
 
         Ok ls ->
             ls
-                |> toString
+                |> listIntToString
                 |> String.filter digitOrComma
+
+
+listIntToString : List Int -> String
+listIntToString l =
+    case l of
+        [] ->
+            "[]"
+
+        [ i ] ->
+            "[" ++ String.fromInt i ++ "]"
+
+        ls ->
+            "[" ++ listIntToStringHelp ls ++ "]"
+
+
+listIntToStringHelp : List Int -> String
+listIntToStringHelp l =
+    case l of
+        [] ->
+            "Damnit, how???"
+
+        i :: [] ->
+            String.fromInt i
+
+        i :: is ->
+            (String.fromInt i ++ ", ") ++ (listIntToStringHelp is)
 
 
 view : Model -> Html Msg
 view model =
     div []
         [ input
-            [ placeholder "Ints to encode less (in range 0-255) e.g. 1,44,78,255"
-            , value model.decoded
-            , onInput Decoded
-            , myStyle
-            ]
+            ([ placeholder "Ints to encode less (in range 0-255) e.g. 1,44,78,255"
+             , value model.decoded
+             , onInput Decoded
+             ]
+                ++ myStyle
+            )
             []
         , button [ onClick (Encode <| fromStr model.decoded) ] [ text "encode" ]
         , input
-            [ placeholder "text to decode"
-            , value model.encoded
-            , onInput Encoded
-            , myStyle
-            ]
+            ([ placeholder "text to decode"
+             , value model.encoded
+             , onInput Encoded
+             ]
+                ++ myStyle
+            )
             []
         , button [ onClick (Decode model.encoded) ] [ text "decode" ]
         ]
 
 
-myStyle : Attribute Msg
+myStyle : List (Attribute Msg)
 myStyle =
-    style
+    List.map (\( p, v ) -> style p v)
         [ ( "width", "100%" )
         , ( "height", "40px" )
         , ( "padding", "10px 0" )
