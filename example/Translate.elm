@@ -1,16 +1,15 @@
-module Translate exposing (..)
+module Translate exposing (Model, Msg(..), digitOrComma, encodeMaybe, fromStr, init, listIntToString, listIntToStringHelp, main, myStyle, toByte, toStr, update, view)
 
-import Browser
-import Html exposing (..)
-import Html.Events exposing (onClick, onInput)
-import Html.Attributes exposing (..)
-import Html.Events exposing (on, targetValue)
-import Char exposing (isDigit, toCode)
-import String exposing (filter)
-import Result exposing (Result, toMaybe)
-import Maybe.Extra exposing (combine)
-import BinaryBase64 exposing (encode, decode)
+import BinaryBase64 exposing (decode, encode)
 import Bitwise exposing (..)
+import Browser
+import Char exposing (isDigit, toCode)
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (on, onClick, onInput, targetValue)
+import Maybe.Extra exposing (combine)
+import Result exposing (Result, toMaybe)
+import String exposing (filter)
 
 
 main =
@@ -94,15 +93,16 @@ toByte s =
         r =
             String.toInt s
     in
-        case r of
-            Just i ->
-                if (i >= 0 && i <= 255) then
-                    Result.Ok i
-                else
-                    Err "Out of range"
+    case r of
+        Just i ->
+            if i >= 0 && i <= 255 then
+                Result.Ok i
 
-            Nothing ->
-                Result.Err "Unspecified integer parsing error"
+            else
+                Err "Out of range"
+
+        Nothing ->
+            Result.Err "Unspecified integer parsing error"
 
 
 digitOrComma : Char -> Bool
@@ -145,7 +145,7 @@ listIntToStringHelp l =
             String.fromInt i
 
         i :: is ->
-            (String.fromInt i ++ ", ") ++ (listIntToStringHelp is)
+            (String.fromInt i ++ ", ") ++ listIntToStringHelp is
 
 
 view : Model -> Html Msg
