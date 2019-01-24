@@ -2,7 +2,7 @@ elm-binary-base64
 =================
 [![Build Status](https://travis-ci.org/newlandsvalley/elm-binary-base64.svg?branch=master)](https://travis-ci.org/newlandsvalley/elm-binary-base64)
 
-Yet another Base64 implementation (there were over 1000 of these in various languages hosted on GitHub when last I looked).  This one's in elm 0.18, and concentrates on encoding (and then decoding) binary data. I was hoping that a byte array data type would be introduced as long ago as 0.17 but unfortunately it didn't happen - this means that this project is not a great deal of use until elm has a story to tell. Code derived from [here](https://searchcode.com/codesearch/raw/19162450/).
+Yet another Base64 implementation (there were over 1000 of these in various languages hosted on GitHub when last I looked).  This one's in elm 0.19, and concentrates on encoding (and then decoding) binary data. I was hoping that a byte array data type would be introduced as long ago as 0.17 but unfortunately it didn't happen - this means that this project is not a great deal of use until elm has a story to tell. Code derived from [here](https://searchcode.com/codesearch/raw/19162450/).
 
 It defines the following data types:
 
